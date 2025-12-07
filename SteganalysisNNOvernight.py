@@ -27,6 +27,7 @@ def SaveModel(extraCode = ""):
         message=f"Successfully saved model{filename}",
         timeout=5
     )
+    return full_path
 
 def DataGenerator(filePaths, dbPath, batchSize=16, shuffle=True):
     numFiles = len(filePaths)
@@ -128,17 +129,17 @@ if shouldLoadOldModel == "Y":
 
 shouldSaveModel = input("Should save current model? (Y/N): ").strip().upper()
 
-lossFunctionInput = input("USE MSE Loss Function (Y/N) : ").strip().upper()
+lossFunctionInput = input("USE MSE Loss Function (Y/N) : ").strip().upper
 if(lossFunctionInput == "Y"):
     lossFunction = "mean_squared_error"
 else:
     lossFunction = "mean_absolute_error"
 
 # Let's tell our machine how to learn. This step is like giving it the rules of the game.
-learningRate = 0.0001
+learningRate = 0.001
 model.compile(
     optimizer=Adam(learning_rate = tf.keras.optimizers.schedules.ExponentialDecay(
-    initial_learning_rate=learningRate, decay_steps=500, decay_rate=1, staircase=True)),  # The "coach" that helps the machine learn and improve.
+    initial_learning_rate=learningRate, decay_steps=500, decay_rate=0.98, staircase=True)),  # The "coach" that helps the machine learn and improve.
     loss=lossFunction  # This tells it how bad its guesses are so it can try again.
 )
 
@@ -152,15 +153,7 @@ for i in range(1, 8901):
 batchSize = 16
 trainGen = DataGenerator(trainFilePaths, 'SteganalysisNNTrainingDatabase.db', batchSize=batchSize)
 stepsPerEpoch = len(trainFilePaths) // batchSize
-
-if(numEpochs > 0):
-    model.fit(trainGen, epochs=numEpochs, steps_per_epoch=stepsPerEpoch, verbose=1, batch_size=16, callbacks=[early_stop_callback])
-
-# Saving AI
-if(shouldSaveModel == "Y"):
-    SaveModel()
-
-# Testing AI - It will get 1k new images to check, and ill get an average of how wrong it is
+   
 def load_test_sample(filePath, dbPath):
     # Load the .npy file
     x = np.load(filePath).astype(np.float32)  # shape (256, 256)
@@ -182,18 +175,45 @@ def load_test_sample(filePath, dbPath):
 
     return x, y_true
 
+
+# Testing AI - It will get 1k new images to check, and ill get an average of how wrong it is
 testFolder = r"C:\Users\iniga\Datasets\Custom\NPY\Testing"
 
 testFiles = [os.path.join(testFolder, f) for f in os.listdir(testFolder) if f.endswith(".npy")]
 
 errors = []
 
-for filePath in testFiles:
-    x_test, y_true = load_test_sample(filePath, "SteganalysisNNTrainingDatabase.db")
-    y_pred = model.predict(x_test)[0][0]  # predicted value
-    error = abs(y_pred - y_true)          # absolute error
-    errors.append(error)
+# ---- CYCLIC TRAINING: 12 cycles of 1 epoch each ----
 
-# Average error
-average_error = sum(errors) / len(errors)
-print(f"Average absolute error on test set: {average_error *100}%")
+numCycles = 9
+cycleEpochs = 1
+lastSavedModelPath = r"C:\Users\iniga\Datasets\Custom\NPY\AI Models\Irisv1-3.5%Off.keras"
+
+for cycle in range(numCycles):
+    print(f"\n--- CYCLE {cycle+1}/{numCycles} ---")
+
+    # Train 1 epoch
+    model.fit(
+        trainGen,
+        epochs=cycleEpochs,
+        steps_per_epoch=stepsPerEpoch,
+        verbose=1,
+    )
+
+    # Save model
+    lastSavedModelPath = SaveModel(extraCode=f"cycle{cycle+1}")
+
+    # Reload saved model to ensure consistency
+    model = tf.keras.models.load_model(lastSavedModelPath)
+    print(f"Reloaded model: {lastSavedModelPath}")
+
+    # --- TESTING PHASE ---
+    errors = []
+    for filePath in testFiles:
+        x_test, y_true = load_test_sample(filePath, "SteganalysisNNTrainingDatabase.db")
+        y_pred = model.predict(x_test)[0][0]
+        error = abs(y_pred - y_true)
+        errors.append(error)
+
+    average_error = sum(errors) / len(errors)
+    print(f"Cycle {cycle+1}: Average absolute error: {average_error*100}%")
