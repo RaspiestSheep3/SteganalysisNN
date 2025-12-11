@@ -13,7 +13,7 @@ import random
 inputsList = []
 outputsList = []
 
-saveFolder = r"C:\Users\iniga\Datasets\Custom\NPY\AI Models"
+saveFolder = r"C:\Users\iniga\Datasets\Custom\NPY\AI Models\Regressional"
 
 def SaveModel(extraCode = ""):
     if(extraCode) != "":

@@ -13,7 +13,7 @@ import random
 inputsList = []
 outputsList = []
 
-saveFolder = r"C:\Users\iniga\Datasets\Custom\NPY\AI Models\Regressional"
+saveFolder = r"C:\Users\iniga\Datasets\Custom\NPY\AI Models\CNN"
 
 def SaveModel(extraCode = ""):
     if(extraCode) != "":
@@ -27,6 +27,7 @@ def SaveModel(extraCode = ""):
         message=f"Successfully saved model{filename}",
         timeout=5
     )
+    
     return full_path
 
 def DataGenerator(filePaths, dbPath, batchSize=16, shuffle=True):
@@ -66,57 +67,16 @@ def DataGenerator(filePaths, dbPath, batchSize=16, shuffle=True):
         
 
 model = keras.Sequential([
-    keras.layers.Input(shape=(256, 256)),   # 2D input
-    keras.layers.Flatten(),                  # flatten inside model
-    keras.layers.Dense(2048, activation='relu'),
-    keras.layers.Dense(1024, activation='relu'),
-    keras.layers.Dense(512, activation='relu'),
+    keras.layers.Input(shape=(256, 256, 1)),
+    keras.layers.Conv2D(32, (3,3), activation='relu'),
+    keras.layers.MaxPooling2D(),
+    keras.layers.Conv2D(64, (3,3), activation='relu'),
+    keras.layers.MaxPooling2D(),
+    keras.layers.Conv2D(128, (3,3), activation='relu'),
+    keras.layers.Flatten(),
     keras.layers.Dense(256, activation='relu'),
     keras.layers.Dense(1, activation='linear')
 ])
-
-targetLoss = 0.0005
-def stop_at_loss(epoch, logs):
-    global targetLoss
-    if logs.get('loss') < targetLoss: 
-        SaveModel(f"epoch{epoch}-loss{logs.get('loss')}")
-        targetLoss = targetLoss / 10
-        #model.stop_training = True
-        
-# Custom callback to save the model if it stops improving for a set number of epochs
-class SaveOnNoImprovement(tf.keras.callbacks.Callback):
-    def __init__(self, patience=5, save_path="model", improvement_threshold=0.0001):
-        super().__init__()
-        self.patience = patience
-        self.save_path = save_path
-        self.improvement_threshold = improvement_threshold 
-        self.best_loss = float("inf")
-        self.wait = 0  # Counter for patience
-
-    def on_epoch_end(self, epoch, logs=None):
-        current_loss = logs.get('loss')
-
-        # Check if the current loss is within the threshold compared to the best loss
-        if self.best_loss - current_loss < self.improvement_threshold:
-            # If the loss did not improve enough, increase patience counter
-            self.wait += 1
-            if self.wait >= self.patience:
-                print(f"Loss has not improved for {self.patience} epochs. Saving model at epoch {epoch + 1}")
-                SaveModel(f"no-improvement-epoch{epoch + 1}-loss{logs.get('loss')}")
-
-                # After saving, reduce the improvement threshold
-                self.improvement_threshold /= 10  # Divide the threshold by 10
-                print(f"New improvement threshold: {self.improvement_threshold}")
-        else:
-            # If there's a sufficient improvement, reset wait counter and update best_loss
-            self.best_loss = current_loss
-            self.wait = 0
-
-
-save_on_no_improvement_callback = SaveOnNoImprovement(patience=5, improvement_threshold=0.0001)
-
-# Custom callback to stop at threshold
-early_stop_callback = tf.keras.callbacks.LambdaCallback(on_epoch_end=stop_at_loss)
 
 # Loading in old model, setting values
 numEpochs = int(input("Epoch number: "))
@@ -129,17 +89,17 @@ if shouldLoadOldModel == "Y":
 
 shouldSaveModel = input("Should save current model? (Y/N): ").strip().upper()
 
-lossFunctionInput = input("USE MSE Loss Function (Y/N) : ").strip().upper
+lossFunctionInput = input("USE MSE Loss Function (Y/N) : ").strip().upper()
 if(lossFunctionInput == "Y"):
     lossFunction = "mean_squared_error"
 else:
     lossFunction = "mean_absolute_error"
 
 # Let's tell our machine how to learn. This step is like giving it the rules of the game.
-learningRate = 0.001
+learningRate = float(input("Learning rate (default = 0.0001) : "))
 model.compile(
     optimizer=Adam(learning_rate = tf.keras.optimizers.schedules.ExponentialDecay(
-    initial_learning_rate=learningRate, decay_steps=500, decay_rate=0.98, staircase=True)),  # The "coach" that helps the machine learn and improve.
+    initial_learning_rate=learningRate, decay_steps=500, decay_rate=1, staircase=True)),  # The "coach" that helps the machine learn and improve.
     loss=lossFunction  # This tells it how bad its guesses are so it can try again.
 )
 
@@ -153,7 +113,7 @@ for i in range(1, 8901):
 batchSize = 16
 trainGen = DataGenerator(trainFilePaths, 'SteganalysisNNTrainingDatabase.db', batchSize=batchSize)
 stepsPerEpoch = len(trainFilePaths) // batchSize
-   
+
 def load_test_sample(filePath, dbPath):
     # Load the .npy file
     x = np.load(filePath).astype(np.float32)  # shape (256, 256)
@@ -175,45 +135,28 @@ def load_test_sample(filePath, dbPath):
 
     return x, y_true
 
-
-# Testing AI - It will get 1k new images to check, and ill get an average of how wrong it is
 testFolder = r"C:\Users\iniga\Datasets\Custom\NPY\Testing"
 
 testFiles = [os.path.join(testFolder, f) for f in os.listdir(testFolder) if f.endswith(".npy")]
 
-errors = []
+for i in range(numEpochs):
+    print(f"===CYCLE{i}/{numEpochs}===")
+    model.fit(trainGen, epochs=1, steps_per_epoch=stepsPerEpoch, verbose=1, batch_size=16)
 
-# ---- CYCLIC TRAINING: 12 cycles of 1 epoch each ----
-
-numCycles = 9
-cycleEpochs = 1
-lastSavedModelPath = input("Last Model path : ").strip().strip('"')
-
-for cycle in range(numCycles):
-    print(f"\n--- CYCLE {cycle+1}/{numCycles} ---")
-
-    # Train 1 epoch
-    model.fit(
-        trainGen,
-        epochs=cycleEpochs,
-        steps_per_epoch=stepsPerEpoch,
-        verbose=1,
-    )
-
-    # Save model
-    lastSavedModelPath = SaveModel(extraCode=f"cycle{cycle+1}")
-
-    # Reload saved model to ensure consistency
-    model = tf.keras.models.load_model(lastSavedModelPath)
-    print(f"Reloaded model: {lastSavedModelPath}")
-
-    # --- TESTING PHASE ---
+    #Silent training
     errors = []
+
     for filePath in testFiles:
         x_test, y_true = load_test_sample(filePath, "SteganalysisNNTrainingDatabase.db")
-        y_pred = model.predict(x_test)[0][0]
-        error = abs(y_pred - y_true)
+        y_pred = model.predict(x_test, verbose=0)[0][0]  # predicted value
+        error = abs(y_pred - y_true)          # absolute error
         errors.append(error)
 
+    # Average error
     average_error = sum(errors) / len(errors)
-    print(f"Cycle {cycle+1}: Average absolute error: {average_error*100}%")
+    print(f"Average absolute error on test set for cycle {i}: {average_error *100}%")
+
+    # Saving AI
+    if(shouldSaveModel == "Y"):
+        modelCode = SaveModel(f"cycle{i}")
+        model = tf.keras.models.load_model(modelCode)
