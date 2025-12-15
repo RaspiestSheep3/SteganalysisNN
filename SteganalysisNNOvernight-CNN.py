@@ -13,7 +13,7 @@ import random
 inputsList = []
 outputsList = []
 
-saveFolder = r"C:\Users\iniga\Datasets\Custom\NPY\AI Models\CNN"
+saveFolder = r"C:\Users\iniga\Datasets\Custom\NPY\AI Models\CNN v2"
 
 def SaveModel(extraCode = ""):
     if(extraCode) != "":
@@ -48,6 +48,10 @@ def DataGenerator(filePaths, dbPath, batchSize=16, shuffle=True):
 
             for file in batchFiles:
                 x = np.load(file)
+                x = x.astype(np.float32)
+                x = np.expand_dims(x, axis=-1)   # shape (256,256,1)
+                x = x - 0.5                      # center to [-0.5, 0.5]
+                
                 batchInputs.append(x)
 
                 #Processing the file 
@@ -68,13 +72,19 @@ def DataGenerator(filePaths, dbPath, batchSize=16, shuffle=True):
 
 model = keras.Sequential([
     keras.layers.Input(shape=(256, 256, 1)),
-    keras.layers.Conv2D(32, (3,3), activation='relu'),
-    keras.layers.MaxPooling2D(),
-    keras.layers.Conv2D(64, (3,3), activation='relu'),
-    keras.layers.MaxPooling2D(),
-    keras.layers.Conv2D(128, (3,3), activation='relu'),
+    keras.layers.Conv2D(32, (3,3)),
+    keras.layers.BatchNormalization(),
+    keras.layers.LeakyReLU(alpha=0.1),
+    keras.layers.AveragePooling2D(pool_size=(2, 2)),
+    keras.layers.Conv2D(64, (3,3)),
+    keras.layers.LeakyReLU(alpha=0.1),
+    keras.layers.AveragePooling2D(pool_size=(2, 2)),
+    keras.layers.Conv2D(128, (3,3)),
+    keras.layers.LeakyReLU(alpha=0.1),
     keras.layers.Flatten(),
-    keras.layers.Dense(256, activation='relu'),
+    keras.layers.Dense(256),
+    keras.layers.Dropout(0.2),
+    keras.layers.LeakyReLU(alpha=0.1),
     keras.layers.Dense(1, activation='linear')
 ])
 
@@ -99,7 +109,7 @@ else:
 learningRate = float(input("Learning rate (default = 0.0001) : "))
 model.compile(
     optimizer=Adam(learning_rate = tf.keras.optimizers.schedules.ExponentialDecay(
-    initial_learning_rate=learningRate, decay_steps=500, decay_rate=1, staircase=True)),  # The "coach" that helps the machine learn and improve.
+    initial_learning_rate=learningRate, decay_steps=500, decay_rate=0.98, staircase=True)),  # The "coach" that helps the machine learn and improve.
     loss=lossFunction  # This tells it how bad its guesses are so it can try again.
 )
 

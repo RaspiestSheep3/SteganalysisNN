@@ -13,7 +13,7 @@ import random
 inputsList = []
 outputsList = []
 
-saveFolder = r"C:\Users\iniga\Datasets\Custom\NPY\AI Models\CNN"
+saveFolder = r"C:\Users\iniga\Datasets\AI Models\CNN v2"
 
 def SaveModel(extraCode = ""):
     if(extraCode) != "":
@@ -50,7 +50,7 @@ def DataGenerator(filePaths, dbPath, batchSize=16, shuffle=True):
 
                 #Processing the file 
                 #print(f"Index : {filePaths.index(file)}, File : {file}")
-                fileStripped = file.strip(r"C:\Users\iniga\Datasets\Custom\NPY\Full/").strip(".npy")
+                fileStripped = file.strip(r"C:\Users\iniga\Datasets\Custom\NPY\New Full/").strip(".npy")
                 [rawNum, versionNum] = fileStripped.split("_")
                 
                 # Assuming table 'labels' with columns 'filename' and 'label'
@@ -103,13 +103,13 @@ model.compile(
 
 #Creating TrainFilePaths
 trainFilePaths = []
-for i in range(1, 8901):
+for i in range(1, 18901):
     for j in range(10):
-        trainFilePaths.append(fr"C:\Users\iniga\Datasets\Custom\NPY\Full\{i}_{j}.npy")
+        trainFilePaths.append(fr"C:\Users\iniga\Datasets\Custom\NPY\New Full\{i}_{j}.npy")
 
 # Time for the machine to learn! We show it our input-output pairs (data) many times (epochs).
 batchSize = 16
-trainGen = DataGenerator(trainFilePaths, 'SteganalysisNNTrainingDatabase.db', batchSize=batchSize)
+trainGen = DataGenerator(trainFilePaths, 'SteganalysisNNTrainingDatabaseNew.db', batchSize=batchSize)
 stepsPerEpoch = len(trainFilePaths) // batchSize
 
 if(numEpochs > 0):
@@ -141,14 +141,14 @@ def load_test_sample(filePath, dbPath):
 
     return x, y_true
 
-testFolder = r"C:\Users\iniga\Datasets\Custom\NPY\Testing"
+testFolder = r"C:\Users\iniga\Datasets\Custom\NPY\New Testing"
 
 testFiles = [os.path.join(testFolder, f) for f in os.listdir(testFolder) if f.endswith(".npy")]
 
 errors = []
 
 for filePath in testFiles:
-    x_test, y_true = load_test_sample(filePath, "SteganalysisNNTrainingDatabase.db")
+    x_test, y_true = load_test_sample(filePath, "SteganalysisNNTrainingDatabaseNew.db")
     y_pred = model.predict(x_test)[0][0]  # predicted value
     error = abs(y_pred - y_true)          # absolute error
     errors.append(error)

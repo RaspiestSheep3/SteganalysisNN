@@ -41,14 +41,14 @@ def load_test_sample(filePath, dbPath):
 
     return x, y_true
 
-testFolder = r"C:\Users\iniga\Datasets\Custom\NPY\Testing"
+testFolder = r"C:\Users\iniga\Datasets\Custom\NPY\New Testing"
 
 testFiles = [os.path.join(testFolder, f) for f in os.listdir(testFolder) if f.endswith(".npy")]
 
 errors = []
 
 for filePath in testFiles:
-    x_test, y_true = load_test_sample(filePath, "SteganalysisNNTrainingDatabase.db")
+    x_test, y_true = load_test_sample(filePath, "SteganalysisNNTrainingDatabaseNew.db")
     y_pred = model.predict(x_test, verbose=2)[0][0]  # predicted value
     error = abs(y_pred - y_true)          # absolute error
     errors.append(error)
