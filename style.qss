@@ -1,0 +1,57 @@
+*{
+    color : #e9efec;
+}
+
+QMainWindow {
+    background-color: #211e20;
+}
+
+QPushButton {
+    background-color: #555568;
+    border: none;
+    padding: 8px;
+    font-size : 25px;
+    border : 1px solid #555568;
+    border-radius : 20px;
+}
+
+QPushButton:checked {
+    background-color: #2929de;
+}
+
+QLabel {
+    font-size : 30px;
+}
+
+QCheckBox {
+    font-size : 35px;
+}
+
+QLineEdit {
+    color : #211e20;
+    font-size : 25px;
+}
+
+QGroupBox {
+    font-size : 20px;
+    qproperty-alignment: AlignCenter;
+}
+
+QCheckBox::indicator {
+    width: 30px;
+    height: 30px;
+}
+
+QCheckBox::indicator:unchecked {
+    border: 2px solid #555568;
+    background-color: #211e20;
+}
+
+QCheckBox::indicator:checked {
+    background-color: #77778a;
+    border: 2px solid #555568;
+}
+#PNGDropArea {
+    border: 2px dashed #555568;
+    font-size: 24px;
+}
