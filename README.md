@@ -17,13 +17,13 @@ Iris is an open-source **AI Steganalysis Tool** that uses **Machine Learning** t
   Each channel can be analysed individually to detect single-channel or dual-channel embedding
 
 - **Lightweight UI**
-    The UI is built in Python with PyQt, making it much more lightweight and less resource-intensive than other frameworks such as Electron
+  The UI is built in Python with PyQt, making it much more lightweight and less resource-intensive than other frameworks such as Electron
 
 - **Customisable Pathing**
-    Model paths are highly customisable within the app, allowing for easy swapping out of different models
+  Model paths are highly customisable within the app, allowing for easy swapping out of different models
 
 - **Settings Saving**
-    Settings are saved between uses to allow for the best user experience
+  Settings are saved between uses to allow for the best user experience
 
 ---
 
